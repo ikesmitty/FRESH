@@ -10,7 +10,9 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,15 +42,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String redditAPICall(){
+        //To Do: Need to setup OAUTH2 for api authentication in app before making this connection call
         HttpURLConnection urlConnection = null;
         try
         {
-            URL url = new URL("http://www.reddit.com/r/hiphopheads/hot/");
+            Authenticator.setDefault(new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication("ikesmitty", "stephen".toCharArray());
+                }
+            });
+            URL url = new URL("http://www.reddit.com/r/hiphopheads/new.json");
             urlConnection = (HttpURLConnection) url.openConnection();
-            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-            readStream(in);
+            int responseCode = urlConnection.getResponseCode();
+            System.out.print("OUR RESPONSE" + responseCode);
+            if(responseCode == 200) {
+                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                readStream(in);
+            }
         } catch(Exception ex){
-
+            System.out.print("OUR EXCEPTION: " + ex);
         }
         finally {
             urlConnection.disconnect();
