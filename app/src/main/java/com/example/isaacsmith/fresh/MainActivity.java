@@ -3,6 +3,7 @@ package com.example.isaacsmith.fresh;
 import android.app.DownloadManager;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
@@ -30,8 +31,11 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import android.view.SurfaceHolder.Callback;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
+
+    TextView txtString;
 
     private static final String TAG = "MainActivity";
 
@@ -50,10 +54,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACCESS_TOKEN_URL =
             "https://www.reddit.com/api/v1/access_token";
 
+    private static final String URL = "http://www.reddit.com/r/hiphopheads/hot.json";
+    private static final String URLTest = "https://oauth.reddit.com/api/v1/me";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        txtString = (TextView)findViewById(R.id.txtString);
 
         //redditAPICall();
     }
@@ -86,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 Base64.NO_WRAP);
 
         Request request = new Request.Builder()
-                .addHeader("User-Agent", "Sample App")
+                .addHeader("User-Agent", "FRESH")
                 .addHeader("Authorization", "Basic " + encodedAuthString)
                 .url(ACCESS_TOKEN_URL)
                 .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded"),
@@ -144,27 +153,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String redditAPICall(String accessToken){
+    private void redditAPICall(String accessToken){
         //To Do: Need to setup OAUTH2 for api authentication in app before making this connection call
-        HttpURLConnection urlConnection = null;
-        try
-        {
-            URL url = new URL("http://www.reddit.com/r/hiphopheads/new.json" + accessToken);
-            urlConnection = (HttpURLConnection) url.openConnection();
-            int responseCode = urlConnection.getResponseCode();
-            System.out.print("OUR RESPONSE" + responseCode);
-            if(responseCode == 200) {
-                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                readStream(in);
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .url(URL)
+                .build();
+
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                call.cancel();
             }
-        } catch(Exception ex){
-            System.out.print("OUR EXCEPTION: " + ex);
-        }
-        finally {
-            urlConnection.disconnect();
-        }
 
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String myResponse = response.body().string();
 
-        return "";
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        txtString.setText(myResponse);
+                    }
+                });
+            }
+        });
     }
 }
