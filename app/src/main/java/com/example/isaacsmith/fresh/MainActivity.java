@@ -1,6 +1,7 @@
 package com.example.isaacsmith.fresh;
 
 import android.app.DownloadManager;
+import android.app.ListFragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -34,15 +35,16 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import android.view.SurfaceHolder.Callback;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView txtString;
     ListView listView;
-    List<String> myArrayList;
+    List<String> titleList;
+    List<String> linksList;
     ArrayAdapter<String> arrayAdapter;
 
     private static final String TAG = "MainActivity";
@@ -62,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACCESS_TOKEN_URL =
             "https://www.reddit.com/api/v1/access_token";
 
-    private static final String URL = "http://www.reddit.com/r/hiphopheads/hot.json";
+    private static final String URL = "http://www.reddit.com/r/hiphopheads/hot.json?count=500";
     private static final String URLTest = "https://oauth.reddit.com/api/v1/me";
 
     @Override
@@ -70,12 +72,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txtString = (TextView)findViewById(R.id.txtString);
-
         listView = (ListView)findViewById(R.id.listView);
         // Instanciating an array list (you don't need to do this,
         // you already have yours).
-        myArrayList = new ArrayList<String>();
+        titleList = new ArrayList<String>();
+        linksList = new ArrayList<String>();
 
         // This is the array adapter, it takes the context of the activity as a
         // first parameter, the type of list view as a second parameter and your
@@ -83,11 +84,18 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter = new ArrayAdapter<String>(
                 this,
                 android.R.layout.simple_list_item_1,
-                myArrayList );
+                titleList );
 
         listView.setAdapter(arrayAdapter);
-
-        //redditAPICall();
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                Uri uri = Uri.parse(linksList.get(position));
+                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -211,16 +219,17 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject topic = hotPosts.getJSONObject(i).getJSONObject("data");
                 String title = topic.getString("title");
                 String url = topic.getString("url");
-                myArrayList.add(title);
-                Log.d("TITLE", title);
-                Log.d("URL", url);
+                if(title.contains("[FRESH]")) {
+                    titleList.add(title);
+                    linksList.add(url);
+                }
             }
 
             MainActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     arrayAdapter.notifyDataSetChanged();
-                    }
+                }
             });
         }catch (Exception e) {
             System.out.println("Got an exception");
