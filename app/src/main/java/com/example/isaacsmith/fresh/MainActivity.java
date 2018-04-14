@@ -185,8 +185,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void redditAPICall(String accessToken){
-        //To Do: Need to setup OAUTH2 for api authentication in app before making this connection call
-
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
