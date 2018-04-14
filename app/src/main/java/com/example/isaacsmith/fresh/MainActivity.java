@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,6 +23,8 @@ import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.MediaType;
@@ -31,11 +34,16 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import android.view.SurfaceHolder.Callback;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
     TextView txtString;
+    ListView listView;
+    List<String> myArrayList;
+    ArrayAdapter<String> arrayAdapter;
 
     private static final String TAG = "MainActivity";
 
@@ -63,6 +71,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         txtString = (TextView)findViewById(R.id.txtString);
+
+        listView = (ListView)findViewById(R.id.listView);
+        // Instanciating an array list (you don't need to do this,
+        // you already have yours).
+        myArrayList = new ArrayList<String>();
+
+        // This is the array adapter, it takes the context of the activity as a
+        // first parameter, the type of list view as a second parameter and your
+        // array as a third parameter.
+        arrayAdapter = new ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_list_item_1,
+                myArrayList );
+
+        listView.setAdapter(arrayAdapter);
 
         //redditAPICall();
     }
@@ -172,14 +195,35 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 final String myResponse = response.body().string();
-
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        txtString.setText(myResponse);
-                    }
-                });
+                getFreshPosts(myResponse);
             }
         });
+    }
+
+    private void getFreshPosts(String response)
+    {
+        try {
+            JSONObject jObject = new JSONObject(response);
+            JSONObject data = jObject.getJSONObject("data");
+            JSONArray hotPosts = data.getJSONArray("children");
+
+            for (int i = 0; i < hotPosts.length(); i++) {
+                JSONObject topic = hotPosts.getJSONObject(i).getJSONObject("data");
+                String title = topic.getString("title");
+                String url = topic.getString("url");
+                myArrayList.add(title);
+                Log.d("TITLE", title);
+                Log.d("URL", url);
+            }
+
+            MainActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    arrayAdapter.notifyDataSetChanged();
+                    }
+            });
+        }catch (Exception e) {
+            System.out.println("Got an exception");
+        }
     }
 }
